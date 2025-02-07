@@ -4,12 +4,12 @@ import 'package:ts/models/photo.dart';
 
 class DatabaseService {
   static Database? _database;
-  
+
   Future<Database> get database async {
     _database ??= await _initDatabase();
     return _database!;
   }
-  
+
   Future<Database> _initDatabase() async {
     final path = await getDatabasesPath();
     return openDatabase(
@@ -21,10 +21,12 @@ class DatabaseService {
             name TEXT,
             url TEXT,
             createdTime TEXT,
-            isFavorite INTEGER
+            isFavorite INTEGER,
+            isDownloaded INTEGER DEFAULT 0,
+            localPath TEXT
           )
         ''');
-        
+
         await db.execute('''
           CREATE TABLE metadata(
             key TEXT PRIMARY KEY,
@@ -32,14 +34,21 @@ class DatabaseService {
           )
         ''');
       },
-      version: 1,
+      version: 2,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+              'ALTER TABLE photos ADD COLUMN isDownloaded INTEGER DEFAULT 0');
+          await db.execute('ALTER TABLE photos ADD COLUMN localPath TEXT');
+        }
+      },
     );
   }
-  
+
   Future<void> savePhotos(List<Photo> photos) async {
     final db = await database;
     final batch = db.batch();
-    
+
     for (final photo in photos) {
       batch.insert(
         'photos',
@@ -47,16 +56,16 @@ class DatabaseService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
-    
+
     await batch.commit();
   }
-  
+
   Future<List<Photo>> getPhotos() async {
     final db = await database;
     final maps = await db.query('photos', orderBy: 'createdTime DESC');
     return maps.map((map) => Photo.fromMap(map)).toList();
   }
-  
+
   Future<void> updatePhoto(Photo photo) async {
     final db = await database;
     await db.update(
@@ -66,7 +75,21 @@ class DatabaseService {
       whereArgs: [photo.id],
     );
   }
-  
+
+  Future<void> updatePhotoDownloadStatus(
+      String id, bool isDownloaded, String? localPath) async {
+    final db = await database;
+    await db.update(
+      'photos',
+      {
+        'isDownloaded': isDownloaded ? 1 : 0,
+        'localPath': localPath,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<DateTime?> getLastSyncTime() async {
     final db = await database;
     final result = await db.query(
@@ -74,11 +97,11 @@ class DatabaseService {
       where: 'key = ?',
       whereArgs: ['last_sync'],
     );
-    
+
     if (result.isEmpty) return null;
     return DateTime.parse(result.first['value'] as String);
   }
-  
+
   Future<void> updateLastSyncTime() async {
     final db = await database;
     await db.insert(

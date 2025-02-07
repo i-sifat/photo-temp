@@ -7,7 +7,7 @@ import 'package:ts/providers/photo_provider.dart';
 
 class PhotoViewScreen extends StatelessWidget {
   final Photo photo;
-  
+
   const PhotoViewScreen({
     super.key,
     required this.photo,
@@ -24,12 +24,64 @@ class PhotoViewScreen extends StatelessWidget {
         actions: [
           Consumer<PhotoProvider>(
             builder: (context, provider, child) {
-              return IconButton(
-                icon: Icon(
-                  photo.isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: photo.isFavorite ? Colors.red : Colors.white,
-                ),
-                onPressed: () => provider.toggleFavorite(photo.id),
+              return Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      photo.isDownloaded ? Icons.download_done : Icons.download,
+                      color: Colors.white,
+                      size: _getIconSize(context),
+                    ),
+                    onPressed: () async {
+                      try {
+                        if (!photo.isDownloaded) {
+                          await provider.downloadPhoto(photo);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Photo downloaded successfully')),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Failed to download photo')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.share,
+                      color: Colors.white,
+                      size: _getIconSize(context),
+                    ),
+                    onPressed: () async {
+                      try {
+                        await provider.sharePhoto(photo);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Failed to share photo')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      photo.isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: photo.isFavorite ? Colors.red : Colors.white,
+                      size: _getIconSize(context),
+                    ),
+                    onPressed: () => provider.toggleFavorite(photo.id),
+                  ),
+                ],
               );
             },
           ),
@@ -60,5 +112,12 @@ class PhotoViewScreen extends StatelessWidget {
         backgroundDecoration: const BoxDecoration(color: Colors.black),
       ),
     );
+  }
+
+  double _getIconSize(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width <= 300) return 20;
+    if (width <= 600) return 24;
+    return 28;
   }
 }

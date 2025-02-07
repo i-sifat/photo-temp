@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:ts/screens/home_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -19,14 +22,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 3));
     _checkFirstTime();
   }
 
   Future<void> _checkFirstTime() async {
     final prefs = await SharedPreferences.getInstance();
     _isFirstTime = !prefs.containsKey('welcomed');
-    
+
     if (_isFirstTime) {
       await prefs.setBool('welcomed', true);
       _playWelcome();

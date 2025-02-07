@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:ts/models/photo.dart';
 import 'package:ts/services/drive_service.dart';
 import 'package:ts/services/database_service.dart';
+import 'package:ts/services/photo_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class PhotoProvider with ChangeNotifier {
   final DriveService _driveService = DriveService();
   final DatabaseService _databaseService = DatabaseService();
+  final PhotoService _photoService = PhotoService();
   final Connectivity _connectivity = Connectivity();
 
   List<Photo> _photos = [];
@@ -39,7 +41,6 @@ class PhotoProvider with ChangeNotifier {
       _isOffline = result == ConnectivityResult.none;
 
       if (wasOffline && !_isOffline) {
-        // Back online - sync with server
         await _syncWithServer();
       }
       notifyListeners();
@@ -125,6 +126,41 @@ class PhotoProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> downloadPhoto(Photo photo) async {
+    try {
+      final localPath = await _photoService.downloadPhoto(
+          photo.url, '${photo.id}_${photo.name}');
+      await _databaseService.updatePhotoDownloadStatus(
+          photo.id, true, localPath);
+
+      final index = _photos.indexWhere((p) => p.id == photo.id);
+      if (index != -1) {
+        _photos[index].isDownloaded = true;
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Failed to download photo: ${e.toString()}';
+      debugPrint(_error);
+      rethrow;
+    }
+  }
+
+  Future<void> sharePhoto(Photo photo, {String? caption}) async {
+    try {
+      if (!photo.isDownloaded) {
+        await downloadPhoto(photo);
+      }
+      final localPath = (await _databaseService.getPhotos())
+          .firstWhere((p) => p.id == photo.id)
+          .url;
+      await _photoService.sharePhoto(localPath, caption);
+    } catch (e) {
+      _error = 'Failed to share photo: ${e.toString()}';
+      debugPrint(_error);
+      rethrow;
     }
   }
 

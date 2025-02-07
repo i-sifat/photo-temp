@@ -9,6 +9,7 @@ class Photo {
   final int? size;
   final String? mimeType;
   bool isFavorite;
+  bool isDownloaded;
 
   Photo({
     required this.id,
@@ -19,10 +20,12 @@ class Photo {
     this.size,
     this.mimeType,
     this.isFavorite = false,
+    this.isDownloaded = false,
   });
 
   String get formattedDate => DateFormat.yMMMd().format(createdTime);
-  String get formattedSize => size != null ? _formatSize(size!) : 'Unknown size';
+  String get formattedSize =>
+      size != null ? _formatSize(size!) : 'Unknown size';
 
   Map<String, dynamic> toMap() {
     return {
@@ -34,6 +37,7 @@ class Photo {
       'size': size,
       'mimeType': mimeType,
       'isFavorite': isFavorite ? 1 : 0,
+      'isDownloaded': isDownloaded ? 1 : 0,
     };
   }
 
@@ -47,6 +51,7 @@ class Photo {
       size: map['size'],
       mimeType: map['mimeType'],
       isFavorite: map['isFavorite'] == 1,
+      isDownloaded: map['isDownloaded'] == 1,
     );
   }
 
