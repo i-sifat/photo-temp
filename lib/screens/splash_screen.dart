@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:ts/providers/auth_provider.dart';
-import 'package:ts/screens/auth_screen.dart';
 import 'package:ts/screens/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -21,17 +18,10 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initialize() async {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.isAuthenticated) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const AuthScreen()),
-      );
-    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+    );
   }
 
   @override
